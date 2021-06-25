@@ -7,8 +7,8 @@ def login(request):
     if request.method == 'POST':
         form = AuthenticationForm(data=request.POST)
         if form.is_valid():
-            return redirect('')
+            return HttpResponse("hellllllllllllllll")
     else:
         form = AuthenticationForm()
 
-    return render(request, 'loginReport/home.html', {'form': form})
+    return render(request, 'loginReport/login.html', {'form': form})
