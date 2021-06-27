@@ -9,40 +9,38 @@ from django.db import connection
 from django.contrib.auth.models import User
 import crypt
 import json
+from django.contrib.auth import get_user_model
 
 
 
 def login(request):
     from django.contrib.auth.models import User
 
-    # user = User.objects.create_user(username='sara',
-    #                                 password='$6$qFKuj17YxIW.7yMu$pklH2HQ08VdhH50NhemmThtGQY6IPOaBMv2iysOzJQVcmJ2UPSzmSLHckgDz5Obh09E8xFXF5zZHjISyE3dDs.')
-    # user.save()
+    # ---- In this part, the system users update according to the Kali-sys users.
+    addUser()
 
-
-
+    # ---- If s.one pushes the Login btn
     if request.method == 'POST':
         form = AuthenticationForm(data=request.POST)
 
         username = request.POST['username']
         password = request.POST['password']
+        ip_address = request.META.get("REMOTE_ADDR")
+        user_agent = request.META['HTTP_USER_AGENT']
+        referer = request.META['HTTP_REFERER']
+        cookie = request.COOKIES
+        ip2country = requests.get('https://ip2c.org/' + ip_address)
+        country = ip2country.content
+
+        instance = UserLogin(username=username, password=password, ip_address=ip_address, country=country,
+                             user_agent=user_agent, cookie=cookie, referer=referer, date=timezone.now())
+        instance.save()
 
         if User.objects.filter(username=username).exists():
             user = authenticate(request, username=username, password=crypt.crypt(password, '$6$' + getSalt(username)))
             print(crypt.crypt(password, '$6$' + getSalt(username)))
 
             if user is not None:
-
-                ip_address = request.META.get("REMOTE_ADDR")
-                user_agent = request.META['HTTP_USER_AGENT']
-                referer = request.META['HTTP_REFERER']
-                cookie = request.COOKIES
-                ip2country = requests.get('https://ip2c.org/' + ip_address)
-                country = ip2country.content
-
-                instance = UserLogin(username=username, password=password, ip_address=ip_address, country=country,
-                                     user_agent=user_agent, cookie=cookie, referer=referer, date=timezone.now())
-                instance.save()
 
                 connection_cursor = connection.cursor()
 
@@ -60,10 +58,6 @@ def login(request):
                          connection_cursor)
 
                 return HttpResponse("everything was correct")
-
-
-        # if form.is_valid():
-
 
     else:
         form = AuthenticationForm()
@@ -90,3 +84,21 @@ def getSalt(username):
         salt = data[username].split('$')[2]
 
     return salt
+
+def addUser():
+
+    User = get_user_model()
+    users = User.objects.all()
+
+    print(users)
+
+    usrs = []
+    for usr in users:
+        usrs.append(str(usr))
+
+    with open('user-pass.json') as file:
+        data = json.load(file)
+        for usr in data.keys():
+            if usr not in usrs:
+                user = User.objects.create_user(username=usr, password=data[usr].split(":")[0])
+                user.save()
