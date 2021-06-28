@@ -16,11 +16,13 @@ from django.contrib.auth.models import User
 
 reports = []
 logedin = False
+username = None
 
 
 def login(request):
 
     global logedin
+    global username
 
     # ---- In this part, the system users update according to the Kali-sys users.
     addUser()
@@ -52,16 +54,16 @@ def login(request):
                 connection_cursor = connection.cursor()
 
                 reporter("Most Usernames",
-                         "select username, count(username) from loginReport_userlogin group by username order by count(username) desc limit 5",
+                         "select username, count(username) from loginReport_userlogin group by username order by count(username) desc limit 10",
                          connection_cursor)
                 reporter("Most Passwords",
-                         "select username, count(password) from loginReport_userlogin group by username order by count(password) desc limit 5",
+                         "select username, count(password) from loginReport_userlogin group by username order by count(password) desc limit 10",
                          connection_cursor)
                 reporter("Most User-Pass",
-                         "select username,password, count(*) from loginReport_userlogin group by username,password order by count(*) desc limit 5",
+                         "select username,password, count(*) from loginReport_userlogin group by username,password order by count(*) desc limit 10",
                          connection_cursor)
                 reporter("Most Countries",
-                         "select country, count(country) from loginReport_userlogin group by country order by count(country) desc limit 5",
+                         "select country, count(country) from loginReport_userlogin group by country order by count(country) desc limit 10",
                          connection_cursor)
 
                 logedin = True
@@ -85,10 +87,20 @@ def reporter(topic, query, cursor):
 
 def getFiles(request):
 
+    accessible_files = []
+
+
     if logedin:
         path = '/home/sobii/Desktop/IS-login-proj/IS-Login/files'
         files_list = os.listdir(path)
-        return render(request, 'loginReport/files.html', {'files': files_list})
+
+        for fl in files_list:
+            permissions = os.popen('getfacl ~/Desktop/IS-login-proj/IS-Login/files/' + fl + ' | grep user:' + username)
+
+            if permissions.read().split(':')[-1].find('r') >= 0:
+                accessible_files.append(fl)
+
+        return render(request, 'loginReport/files.html', {'files': accessible_files})
 
     form = AuthenticationForm()
     return render(request, 'loginReport/login.html', {'form': form})
