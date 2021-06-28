@@ -10,11 +10,17 @@ from django.contrib.auth.models import User
 import crypt
 import json
 from django.contrib.auth import get_user_model
+import os
+from django.contrib.auth.models import User
 
+
+reports = []
+logedin = False
 
 
 def login(request):
-    from django.contrib.auth.models import User
+
+    global logedin
 
     # ---- In this part, the system users update according to the Kali-sys users.
     addUser()
@@ -38,10 +44,11 @@ def login(request):
 
         if User.objects.filter(username=username).exists():
             user = authenticate(request, username=username, password=crypt.crypt(password, '$6$' + getSalt(username)))
-            print(crypt.crypt(password, '$6$' + getSalt(username)))
+
 
             if user is not None:
 
+                reports.clear()
                 connection_cursor = connection.cursor()
 
                 reporter("Most Usernames",
@@ -57,8 +64,8 @@ def login(request):
                          "select country, count(country) from loginReport_userlogin group by country order by count(country) desc limit 10",
                          connection_cursor)
 
-                return HttpResponse("everything was correct")
-
+                logedin = True
+                return render(request, 'loginReport/report.html', {'reports': reports})
     else:
         form = AuthenticationForm()
 
@@ -66,16 +73,27 @@ def login(request):
 
 
 def reporter(topic, query, cursor):
-    print(topic, ":")
+    records = []
     cursor.execute(query)
     result = cursor.fetchall()
 
     for record in result:
-        print(record)
+        records.append(record)
+
+    reports.append([topic, records])
 
 
 def getFiles(request):
-    return HttpResponse("files list")
+
+    if logedin:
+        path = '/home/sobii/Desktop/IS-login-proj/IS-Login/files'
+        files_list = os.listdir(path)
+        return render(request, 'loginReport/files.html', {'files': files_list})
+
+    form = AuthenticationForm()
+    return render(request, 'loginReport/login.html', {'form': form})
+
+
 
 
 def getSalt(username):
@@ -89,8 +107,6 @@ def addUser():
 
     User = get_user_model()
     users = User.objects.all()
-
-    print(users)
 
     usrs = []
     for usr in users:

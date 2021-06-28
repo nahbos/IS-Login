@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Report</title>
+</head>
+<body>
+
+    <ul>
+        <h2>
+            <a href='files/'>Files</a>
+        </h2>
+    </ul>
+
+    <br>
+    <br>
+
+    <ul>
+        {% for report in reports %}
+            <h2>------  {{report.0}}  ------</h2>
+            {% for rpt in report.1 %}
+                <li>{{rpt}}</li>
+            {% endfor %}
+            <br>
+        {% endfor %}
+    </ul>
+
+</body>
+</html>
