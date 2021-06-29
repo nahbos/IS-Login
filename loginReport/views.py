@@ -57,7 +57,7 @@ def login(request):
                          "select username, count(username) from loginReport_userlogin group by username order by count(username) desc limit 10",
                          connection_cursor)
                 reporter("Most Passwords",
-                         "select username, count(password) from loginReport_userlogin group by username order by count(password) desc limit 10",
+                         "select password, count(password) from loginReport_userlogin group by password order by count(password) desc limit 10",
                          connection_cursor)
                 reporter("Most User-Pass",
                          "select username,password, count(*) from loginReport_userlogin group by username,password order by count(*) desc limit 10",
